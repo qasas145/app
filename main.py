@@ -35,6 +35,8 @@ app = Flask(__name__)
 api = Api(app, doc = "/", title="User's API", description="a simple REST API for user data", authorizations=authorization)
 
 
+CORS(app)
+
 base_dir = os.path.dirname(os.path.realpath(__file__))
 
 app.config['SECRET_KEY'] = 'ahmed'
