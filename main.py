@@ -65,7 +65,7 @@ UserModel = api.model(
         'id' : fields.Integer(),
         'name' : fields.String(),
         'age' : fields.Integer(),
-        'title' : fields.String()
+        'title' : fields.String(),
     }
 )
 
@@ -104,12 +104,17 @@ class UserData(Resource) :
     @api.doc(params = {"name" : "User name", "age" : "User age", "title" : "User title", 'password' : "User password"}, security='apikey')
     def post(self, user) :
         data = request.args
-
+        keys = ['name', 'age', 'title', 'password']
+        check = [True if data.get(key) is not None else False  for key in keys ]
+        if not all(check) :
+            return {'message' : 'fill the empty fields please .'}, 400
         name = data.get("name")
-        age = data.get("age")
+        try :
+            age = int(data.get("age"))
+        except :
+            return {'message' : 'enter a correct age format .'}, 400 
         title = data.get("title")
         password = data.get('password')
-
         new_user = User(name = name, age = age, title = title, password = generate_password_hash(password))
         db.session.add(new_user)
         db.session.commit()
@@ -136,11 +141,12 @@ class UserDataPk(Resource) :
         if data.get('name') != None :
             user.name = data.get('name')
         if data.get('age') != None :
-            user.age = data.get('age')
+            try :
+                user.age = int(data.get('age'))
+            except :
+                pass
         if data.get('title') != None :
             user.title = data.get('title')
-
-
         db.session.commit()
         return user
 
@@ -166,12 +172,36 @@ class Login(Resource) :
         if (check_password_hash(user.password, password)) :
             token = jwt.encode({
             'id': user.id,
-            'exp' : datetime.utcnow() + timedelta(minutes=30),
+            'exp' : datetime.utcnow() + timedelta(hours=1),
             }, app.config['SECRET_KEY'])
             return make_response(jsonify({'token' : token.decode('UTF-8')}), 201)
         return make_response(jsonify('Could not verify',
         403,
         {'WWW-Authenticate' : 'Basic realm ="Wrong Password !!"'}))
+
+@api.route('/signup/')
+class Signup(Resource) :
+    @api.marshal_with(UserModel, envelope = "signup")
+    @api.doc(params = {"name" : "User name", "age" : "User age", "title" : "User title", 'password' : "User password"})
+    def post(self) :
+        data = request.args
+        keys = ['name', 'age', 'title', 'password']
+        check = [True if data.get(key) is not None else False  for key in keys ]
+        if not all(check) :
+            return {'message' : 'fill the empty fields please .'}, 400
+        name = data.get("name")
+        try :
+            age = int(data.get("age"))
+        except :
+            return {'message' : 'enter a correct age format .'}, 400 
+        title = data.get("title")
+        password = data.get('password')
+        new_user = User(name = name, age = age, title = title, password = generate_password_hash(password))
+        db.session.add(new_user)
+        db.session.commit()
+        return new_user
+
+
 
 
 @app.shell_context_processor
