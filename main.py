@@ -56,7 +56,7 @@ class User(db.Model) :
     name = db.Column(db.String(30), nullable = False)
     age = db.Column(db.Integer(), nullable = False)
     title = db.Column(db.String(30), nullable = False)
-    password = db.Column(db.String(80))
+    password = db.Column(db.String())
 
 
     def __repr__(self) :
@@ -82,9 +82,9 @@ def token_required(f) :
             return jsonify({'message' : 'Token Is missing'}), 401
         
         try :
-            data = jwt.decode(token, app.config['SECRET_KEY'])
+            data = jwt.decode(token, app.config['SECRET_KEY'], algorithms=["HS256"])
             user = User.query.filter_by(id = data['id']).first()
-        except:
+        except :
             return jsonify({
                 "message" : "invalid Token"
             })
@@ -175,8 +175,8 @@ class Login(Resource) :
             token = jwt.encode({
             'id': user.id,
             'exp' : datetime.utcnow() + timedelta(hours=1),
-            }, app.config['SECRET_KEY'])
-            return make_response(jsonify({'token' : token.decode('UTF-8')}), 201)
+            }, app.config['SECRET_KEY'], algorithm="HS256")
+            return make_response(jsonify({'token' : token}), 201)
         return make_response(jsonify('Could not verify',
         403,
         {'WWW-Authenticate' : 'Basic realm ="Wrong Password !!"'}))
