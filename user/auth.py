@@ -1,4 +1,4 @@
-from .app import request, jsonify, app
+from app import request, jsonify, app
 from models import User
 import jwt
 from functools import wraps
