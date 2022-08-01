@@ -1,99 +1,16 @@
-from datetime import datetime, timedelta
-from tokenize import generate_tokens
-from flask import Flask, jsonify, request, Blueprint, make_response
-from flask_cors import CORS
-from flask_restx import Resource, Api, fields
-from flask_sqlalchemy import SQLAlchemy
-import jwt
+from serializers import Resource, UserModel
+from urls import api
+from app import request, make_response, jsonify, app
+from models import User, db
 from werkzeug.security import generate_password_hash, check_password_hash
-from functools import wraps
-import os
+from datetime import datetime, timedelta
+from auth import token_required, jwt
 
 
 
-authorization = {
-    'apikey' : {
-        'type' : 'apiKey',
-        'in' : 'header',
-        # 'name' : 'X-API-KEY'
-        'name' : 'x-access-token'
-    }
-    # 'oauth2': {
-    #     'type': 'oauth2',
-    #     'flow': 'accessToken',
-    #     'tokenUrl': 'https://somewhere.com/token',
-    #     'authorizationUrl': 'https://somewhere.com/auth',
-    #     'scopes': {
-    #         'read': 'Grant read-only access',
-    #         'write': 'Grant read-write access',
-    #     }
-    # }
-}
 
 
-app = Flask(__name__)
-api = Api(app, doc = "/", title="User's API", description="a simple REST API for user data", authorizations=authorization)
-
-
-CORS(app)
-
-base_dir = os.path.dirname(os.path.realpath(__file__))
-
-app.config['SECRET_KEY'] = 'ahmed'
-app.config['SQLALCHEMY_TRACT_MODIFICATION'] = True
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///'+os.path.join(base_dir, 'user.db')
-app.config['SQLALCHEMY_ECHO'] = True
-
-# CORS(app)
-
-base_dir = os.path.dirname(os.path.realpath(__file__))
-
-db = SQLAlchemy(app)
-
-
-class User(db.Model) :
-    id =db.Column(db.Integer(), primary_key = True)
-    name = db.Column(db.String(30), nullable = False)
-    age = db.Column(db.Integer(), nullable = False)
-    title = db.Column(db.String(30), nullable = False)
-    password = db.Column(db.String())
-
-
-    def __repr__(self) :
-        return self.name
-
-UserModel = api.model(
-    "User", {
-        'id' : fields.Integer(),
-        'name' : fields.String(),
-        'age' : fields.Integer(),
-        'title' : fields.String(),
-    }
-)
-
-
-def token_required(f) :
-    @wraps(f)
-    def decorated(*args, **kwargs) :
-        token = None
-        if 'x-access-token' in request.headers :
-            token = request.headers['x-access-token']
-        if not token :
-            return jsonify({'message' : 'Token Is missing'}), 401
-        
-        try :
-            data = jwt.decode(token, app.config['SECRET_KEY'], algorithms=["HS256"])
-            user = User.query.filter_by(id = data['id']).first()
-        except :
-            return jsonify({
-                "message" : "invalid Token"
-            })
-        return f(user, *args, **kwargs)
-    return decorated
-
-@api.route("/users/")
 class UserData(Resource) :
-    
     @api.marshal_list_with(UserModel, envelope = "users", code = 200)
     @token_required
     @api.doc(security='apikey')
@@ -123,8 +40,6 @@ class UserData(Resource) :
         return new_user
 
 
-
-@api.route("/users/<int:id>")
 class UserDataPk(Resource) :
 
     
@@ -162,8 +77,6 @@ class UserDataPk(Resource) :
         db.session.commit()
         return user
 
-
-@api.route('/login/')
 class Login(Resource) :
     @api.doc(params = {'id' : 'user id', 'password' : 'user password'}, security = [])
     def post(self) :
@@ -181,7 +94,6 @@ class Login(Resource) :
         403,
         {'WWW-Authenticate' : 'Basic realm ="Wrong Password !!"'}))
 
-@api.route('/signup/')
 class Signup(Resource) :
     @api.marshal_with(UserModel, envelope = "signup")
     @api.doc(params = {"name" : "User name", "age" : "User age", "title" : "User title", 'password' : "User password"})
@@ -205,15 +117,17 @@ class Signup(Resource) :
 
 
 
-
-@app.shell_context_processor
-def make_shell_processor() :
-    return {
-        "db" : db,
-        "User" : User
-    }
-
-
 if __name__ == "__main__" :
     app.run(debug=True)
 
+
+
+
+
+
+# @app.shell_context_processor
+# def make_shell_processor() :
+#     return {
+#         "db" : db,
+#         "User" : User
+#     }
