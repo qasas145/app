@@ -122,6 +122,16 @@ class Signup(Resource) :
 
 
 
+
+api.add_resource(UserData, "/users/")
+api.add_resource(UserDataPk, "/users/<int:id>")
+api.add_resource(Login, "/login/")
+api.add_resource(Signup, "/signup/")
+
+
+
+
+
 if __name__ == "__main__" :
     app.run(debug=True)
 
