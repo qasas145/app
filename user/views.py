@@ -1,10 +1,10 @@
-from serializers import Resource, UserModel
-from urls import api
-from app import request, make_response, jsonify, app
-from models import User, db
+from .serializers import Resource, UserModel
+from .urls import api
+from .app import request, make_response, jsonify, app
+from .models import User, db
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
-from auth import token_required, jwt
+from .auth import token_required, jwt
 
 
 
@@ -84,6 +84,11 @@ class Login(Resource) :
         id = int(data.get('id'))
         password = data.get('password')
         user = User.query.filter_by(id = id).first()
+        if not user : 
+            return make_response(jsonify('Could not verify',
+        403,
+        {'WWW-Authenticate' : 'Basic realm ="Wrong Id !!"'}))
+
         if (check_password_hash(user.password, password)) :
             token = jwt.encode({
             'id': user.id,

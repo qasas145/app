@@ -1,6 +1,6 @@
 from flask_restx import Api, Resource, fields
 from flask import Flask
-from app import app
+from .app import app
 
 
 

@@ -1,5 +1,5 @@
-from serializers import api
-from views import UserData, UserDataPk, Login, Signup
+from .serializers import api
+from .views import UserData, UserDataPk, Login, Signup
 
 
 
