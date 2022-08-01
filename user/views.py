@@ -1,4 +1,4 @@
-from .serializers import Resource, UserModel
+from .serializers import Resource, UserModel, api
 from .app import request, make_response, jsonify, app
 from .models import User, db
 from werkzeug.security import generate_password_hash, check_password_hash
